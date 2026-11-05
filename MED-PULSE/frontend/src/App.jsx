@@ -151,9 +151,73 @@ export default function App() {
   const [parsedData, setParsedData] = useState(null);
 
   // Donor Registration State
-  const [donorName, setDonorName] = useState('');
-  const [donorPhone, setDonorPhone] = useState('');
+  // Donor Registration Form State with Strict Validation
+const [donorName, setDonorName] = useState('');
+const [donorPhone, setDonorPhone] = useState('');
+const [formErrors, setFormErrors] = useState({ name: '', phone: '' });
 
+// 1. Strict Name Handler: ONLY allows alphabets and spaces
+const handleNameChange = (e) => {
+  const val = e.target.value;
+  // Block any characters that are not letters or spaces
+  if (/^[a-zA-Z\s]*$/.test(val)) {
+    setDonorName(val);
+    if (val.trim().length > 0 && val.trim().length < 3) {
+      setFormErrors(prev => ({
+        ...prev,
+        name: lang === 'EN' ? 'Name must be at least 3 letters' : 'పేరు కనీసం 3 అక్షరాలు ఉండాలి'
+      }));
+    } else {
+      setFormErrors(prev => ({ ...prev, name: '' }));
+    }
+  }
+};
+
+// 2. Strict Phone Handler: ONLY allows numbers, max 10 digits, starts with 6-9
+const handlePhoneChange = (e) => {
+  // Strip out any non-numeric character and limit to 10 digits
+  const rawVal = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+  setDonorPhone(rawVal);
+
+  if (rawVal.length > 0 && !/^[6-9]/.test(rawVal)) {
+    setFormErrors(prev => ({
+      ...prev,
+      phone: lang === 'EN' ? 'Indian mobile number must start with 6, 7, 8, or 9' : 'మొబైల్ నంబర్ 6, 7, 8, లేదా 9తో ప్రారంభం కావాలి'
+    }));
+  } else if (rawVal.length > 0 && rawVal.length < 10) {
+    setFormErrors(prev => ({
+      ...prev,
+      phone: lang === 'EN' ? 'Enter complete 10-digit mobile number' : 'పూర్తి 10 అంకెల మొబైల్ నంబరును నమోదు చేయండి'
+    }));
+  } else {
+    setFormErrors(prev => ({ ...prev, phone: '' }));
+  }
+};
+
+// 3. Form Submission Validator
+const handleDonorSubmit = (e) => {
+  e.preventDefault();
+
+  const errors = {};
+  if (!donorName.trim() || donorName.trim().length < 3) {
+    errors.name = lang === 'EN' ? 'Valid name (min 3 letters) required' : 'చెల్లుబాటు అయ్యే పేరును నమోదు చేయండి';
+  }
+  if (!/^[6-9]\d{9}$/.test(donorPhone)) {
+    errors.phone = lang === 'EN' ? 'Valid 10-digit Indian mobile number required' : '10 అంకెల మొబైల్ నంబరును సరిగ్గా నమోదు చేయండి';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    triggerToast(lang === 'EN' ? 'Please correct the highlighted errors' : 'దయచేసి తప్పులను సరిచేయండి', true);
+    return;
+  }
+
+  // Success
+  triggerToast(lang === 'EN' ? `Donor ${donorName.trim()} registered successfully!` : 'రక్తదాత విజయవంతంగా నమోదయ్యారు!');
+  setDonorName('');
+  setDonorPhone('');
+  setFormErrors({ name: '', phone: '' });
+};
   // Initial Fetch with Fallback
   useEffect(() => {
     fetch(`${API_BASE}/hospitals`)
@@ -693,71 +757,99 @@ export default function App() {
               </div>
               <p className="text-xs text-slate-400 mb-6">{t.donorRegSubtitle}</p>
 
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  triggerToast(lang === 'EN' ? `Donor ${donorName || 'Volunteer'} registered into Vizag Node roster!` : 'రక్తదాత విజయవంతంగా నమోదయ్యారు!');
-                  setDonorName('');
-                  setDonorPhone('');
-                }} 
-                className="space-y-4 text-xs"
-              >
-                <div>
-                  <label className="block text-slate-300 mb-1 font-semibold">{t.fullName}</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={donorName}
-                    onChange={(e) => setDonorName(e.target.value)}
-                    placeholder="e.g. Harini Prasanna" 
-                    className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500" 
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">{t.bloodGroup}</label>
-                    <select className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500">
-                      <option>O +ve</option>
-                      <option>O -ve</option>
-                      <option>A +ve</option>
-                      <option>A -ve</option>
-                      <option>B +ve</option>
-                      <option>B -ve</option>
-                      <option>AB +ve</option>
-                      <option>AB -ve</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">{t.phone}</label>
-                    <input 
-                      type="tel" 
-                      required 
-                      value={donorPhone}
-                      onChange={(e) => setDonorPhone(e.target.value)}
-                      placeholder="+91 98765 43210" 
-                      className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500" 
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-slate-300 mb-1 font-semibold">{t.mandal}</label>
-                  <select className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500">
-                    <option>Maharani Peta Mandal, Vizag</option>
-                    <option>Gajuwaka Mandal, Vizag</option>
-                    <option>Rushikonda Mandal, Vizag</option>
-                    <option>Arilova Mandal, Vizag</option>
-                    <option>Ram Nagar Mandal, Vizag</option>
-                    <option>Madhurawada, Vizag</option>
-                  </select>
-                </div>
-                <button 
-                  type="submit" 
-                  className="w-full py-3 rounded-lg bg-[#d92d34] hover:bg-[#b91c22] text-white font-bold tracking-wide transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-950/40"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{t.registerBtn}</span>
-                </button>
-              </form>
+              <form onSubmit={handleDonorSubmit} className="space-y-4 text-xs" noValidate>
+  {/* Name Field */}
+  <div>
+    <div className="flex justify-between items-center mb-1">
+      <label className="text-slate-300 font-semibold">{t.fullName}</label>
+      <span className="text-[10px] text-slate-500 font-mono">Alphabets only</span>
+    </div>
+    <input 
+      type="text" 
+      required 
+      value={donorName}
+      onChange={handleNameChange}
+      placeholder="e.g. Harini Prasanna" 
+      className={`w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] text-white focus:outline-none transition ${
+        formErrors.name 
+          ? 'border border-red-500 ring-1 ring-red-500/30' 
+          : 'border border-[#1f3258] focus:border-red-500'
+      }`}
+    />
+    {formErrors.name && (
+      <p className="text-red-400 text-[11px] mt-1 font-medium flex items-center gap-1">
+        ⚠️ {formErrors.name}
+      </p>
+    )}
+  </div>
+
+  <div className="grid grid-cols-2 gap-3">
+    {/* Blood Group Field */}
+    <div>
+      <label className="block text-slate-300 mb-1 font-semibold">{t.bloodGroup}</label>
+      <select className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500">
+        <option>O +ve</option>
+        <option>O -ve</option>
+        <option>A +ve</option>
+        <option>A -ve</option>
+        <option>B +ve</option>
+        <option>B -ve</option>
+        <option>AB +ve</option>
+        <option>AB -ve</option>
+      </select>
+    </div>
+
+    {/* Phone Field */}
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <label className="text-slate-300 font-semibold">{t.phone}</label>
+        <span className="text-[10px] text-slate-500 font-mono">+91 (10 digits)</span>
+      </div>
+      <div className="relative">
+        <span className="absolute left-3 top-2.5 text-slate-400 font-mono text-xs">+91</span>
+        <input 
+          type="tel" 
+          required 
+          value={donorPhone}
+          onChange={handlePhoneChange}
+          placeholder="9876543210" 
+          className={`w-full pl-11 pr-3 py-2.5 rounded-lg bg-[#0e1b34] text-white font-mono focus:outline-none transition ${
+            formErrors.phone 
+              ? 'border border-red-500 ring-1 ring-red-500/30' 
+              : 'border border-[#1f3258] focus:border-red-500'
+          }`}
+        />
+      </div>
+      {formErrors.phone && (
+        <p className="text-red-400 text-[11px] mt-1 font-medium flex items-center gap-1">
+          ⚠️ {formErrors.phone}
+        </p>
+      )}
+    </div>
+  </div>
+
+  {/* Mandal Selection */}
+  <div>
+    <label className="block text-slate-300 mb-1 font-semibold">{t.mandal}</label>
+    <select className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500">
+      <option>Maharani Peta Mandal, Vizag</option>
+      <option>Gajuwaka Mandal, Vizag</option>
+      <option>Rushikonda Mandal, Vizag</option>
+      <option>Arilova Mandal, Vizag</option>
+      <option>Ram Nagar Mandal, Vizag</option>
+      <option>Madhurawada, Vizag</option>
+    </select>
+  </div>
+
+  {/* Submit Button */}
+  <button 
+    type="submit" 
+    className="w-full py-3 rounded-lg bg-[#d92d34] hover:bg-[#b91c22] text-white font-bold tracking-wide transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-950/40 active:scale-98"
+  >
+    <Send className="w-4 h-4" />
+    <span>{t.registerBtn}</span>
+  </button>
+</form>
             </div>
           </div>
         )}
