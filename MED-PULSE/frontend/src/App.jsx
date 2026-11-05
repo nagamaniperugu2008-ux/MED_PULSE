@@ -10,24 +10,16 @@ import {
   Info, 
   CheckCircle2, 
   UploadCloud, 
-  FileText, 
   Navigation, 
   Clock, 
-  ShieldCheck, 
-  HeartPulse, 
   Send, 
-  Droplets, 
-  Award, 
   Wifi, 
   WifiOff, 
   X, 
   Flame, 
   Database,
-  Eye,
-  FileCheck2,
-  XCircle,
   Ticket,
-  Users
+  MessageSquare
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 
@@ -74,15 +66,16 @@ const i18n = {
     registerBtn: 'Register as Emergency Donor',
     // Queue Booking translations
     queueTitle: 'King George Hospital (KGH) OPD Token Reservation',
-    queueSubtitle: 'Generate a zero-friction offline digital OPD token and estimated wait time via SMS/Voice channel.',
+    queueSubtitle: 'Generate a zero-friction offline digital OPD token, reservation date, and preview the SMS notification.',
     patientNameLabel: 'Patient Full Name',
+    appointmentDateLabel: 'Appointment Date',
     deptLabel: 'Select OPD Department',
-    issueTokenBtn: 'Generate OPD Token & SMS Dispatch',
-    tokenSuccessTitle: 'Digital OPD Token Issued Successfully!',
+    issueTokenBtn: 'Generate OPD Token & Preview SMS',
+    tokenSuccessTitle: 'Digital OPD Token & Intimation Box',
     tokenNumber: 'Token Number',
     assignedDept: 'Department',
     estWaitTime: 'Estimated Wait Time',
-    smsDispatched: 'Confirmation SMS dispatched to registered mobile device.',
+    smsIntimationTitle: 'SMS Intimation / Outbox Preview',
     aboutTitle: 'About Med Pulse: Vizag Predictive Node',
     aboutDesc: 'Med Pulse uses predictive telemetry and regional demand analytics to prevent critical blood stockouts across Visakhapatnam hospitals.',
     livesSaved: 'Lives Impacted',
@@ -129,15 +122,16 @@ const i18n = {
     registerBtn: 'రక్తదాతగా నమోదు చేయండి',
     // Queue Booking translations (Telugu)
     queueTitle: 'కింగ్ జార్జ్ హాస్పిటల్ (KGH) OPD టోకెన్ రిజర్వేషన్',
-    queueSubtitle: 'గ్రామీణ రోగుల కోసం SMS లేదా వాయిస్ ద్వారా తక్షణ OPD డిజిటల్ టోకెన్ మరియు నిరీక్షణ సమయాన్ని పొందండి.',
+    queueSubtitle: 'గ్రామీణ రోగుల కోసం SMS లేదా వాయిస్ ద్వారా తక్షణ OPD డిజిటల్ టోకెన్ మరియు తేదీని ఎంచుకోండి.',
     patientNameLabel: 'రోగి పూర్తి పేరు',
+    appointmentDateLabel: 'అపాయింట్‌మెంట్ తేదీ',
     deptLabel: 'OPD విభాగం ఎంచుకోండి',
-    issueTokenBtn: 'OPD టోకెన్ జెనరేట్ చేసి SMS పంపు',
-    tokenSuccessTitle: 'డిజిటల్ OPD టోకెన్ విజయవంతంగా జారీ చేయబడింది!',
+    issueTokenBtn: 'OPD టోకెన్ జెనరేట్ చేసి SMS ప్రివ్యూ చూడండి',
+    tokenSuccessTitle: 'డిజిటల్ OPD టోకెన్ & SMS సమాచార పెట్టె',
     tokenNumber: 'టోకెన్ నంబర్',
     assignedDept: 'విభాగం',
     estWaitTime: 'అంచనా వేసిన నిరీక్షణ సమయం',
-    smsDispatched: 'నమోదైన మొబైల్ నంబర్‌కు నిర్ధారణ SMS పంపబడింది.',
+    smsIntimationTitle: 'SMS సమాచార ప్రివ్యూ (Intimation Box)',
     aboutTitle: 'మెడ్ పల్స్ వైజాగ్ నెట్‌వర్క్ గురించి',
     aboutDesc: 'విశాఖపట్నం ఆసుపత్రులలో రక్తం మరియు ప్లేట్‌లెట్ల కొరత రాకుండా ముందస్తుగా హెచ్చరించి అందించే అత్యాధునిక నెట్‌వర్క్.',
     livesSaved: 'కాపాడిన ప్రాణాలు',
@@ -170,18 +164,19 @@ export default function App() {
   const [ocrStatusText, setOcrStatusText] = useState('');
   const [analyzingReport, setAnalyzingReport] = useState(false);
   const [parsedData, setParsedData] = useState(null);
-  const [showRawText, setShowRawText] = useState(false);
 
   // Donor Registration Form State with Strict Validation
   const [donorName, setDonorName] = useState('');
   const [donorPhone, setDonorPhone] = useState('');
   const [formErrors, setFormErrors] = useState({ name: '', phone: '' });
 
-  // OPD Queue Booking State
+  // OPD Queue Booking State (Includes Appointment Date & Intimation Preview)
   const [queuePatientName, setQueuePatientName] = useState('');
   const [queuePhone, setQueuePhone] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedDept, setSelectedDept] = useState('General Medicine');
   const [issuedToken, setIssuedToken] = useState(null);
+  const [queueError, setQueueError] = useState('');
 
   // 1. Fetch Hospital Nodes on load
   const fetchHospitals = async () => {
@@ -332,28 +327,47 @@ export default function App() {
     setFormErrors({ name: '', phone: '' });
   };
 
-  // Feature: Queue Token Generation Handler (OPD Booking for KGH)
+  // Feature: Queue Token Generation & Intimation Box Generator
+  const handleQueueNameChange = (e) => {
+    const val = e.target.value;
+    if (/^[a-zA-Z\s]*$/.test(val)) {
+      setQueuePatientName(val);
+      if (val.trim().length > 0 && val.trim().length < 3) {
+        setQueueError(lang === 'EN' ? 'Patient name must be at least 3 letters' : 'రోగి పేరు కనీసం 3 అక్షరాలు ఉండాలి');
+      } else {
+        setQueueError('');
+      }
+    }
+  };
+
   const handleQueueSubmit = (e) => {
     e.preventDefault();
-    if (!queuePatientName.trim() || !queuePhone.trim()) {
-      triggerToast('Please provide patient name and phone number', true);
+    if (!queuePatientName.trim() || queuePatientName.trim().length < 3) {
+      setQueueError(lang === 'EN' ? 'Valid patient name required' : 'చెల్లుబాటు అయ్యే రోగి పేరు అవసరం');
+      triggerToast('Please provide a valid patient name (min 3 letters)', true);
       return;
     }
 
-    // Smart Allocation simulation for KGH OPD
     const randomTokenNum = `KGH-${Math.floor(100 + Math.random() * 900)}`;
     const randomWaitMins = Math.floor(15 + Math.random() * 30);
+    const hospitalName = 'King George Hospital, Vizag';
+
+    // Construct the Intimation Message Content
+    const intimationMessage = `MedPulse OPD Notice: Token ${randomTokenNum} generated for ${queuePatientName.trim()} (${selectedDept}). Appointment Date: ${appointmentDate}. Est. Wait: ${randomWaitMins} mins. Please report to ${hospitalName}.`;
 
     setIssuedToken({
       tokenNumber: randomTokenNum,
       department: selectedDept,
       patientName: queuePatientName.trim(),
       phone: queuePhone.trim(),
+      appointmentDate: appointmentDate,
       waitTime: `${randomWaitMins} mins`,
+      hospital: hospitalName,
+      smsBody: intimationMessage,
       timestamp: new Date().toLocaleTimeString()
     });
 
-    triggerToast(`OPD Token ${randomTokenNum} Issued! SMS Confirmation Sent.`);
+    triggerToast(`OPD Token ${randomTokenNum} Generated Successfully!`);
   };
 
   // 4. Autonomous Escalation Launcher
@@ -880,7 +894,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 4. FEATURE: OPD QUEUE TOKEN GENERATION (KGH OPD BOOKING) */}
+        {/* 4. FEATURE: OPD QUEUE TOKEN GENERATION WITH INTIMATION BOX */}
         {activeTab === 'queue' && (
           <div className="max-w-2xl mx-auto bg-[#0b162b] border border-[#162747] rounded-xl p-6 space-y-6">
             <div>
@@ -897,11 +911,12 @@ export default function App() {
                 <input 
                   type="text" 
                   value={queuePatientName} 
-                  onChange={(e) => setQueuePatientName(e.target.value)}
-                  placeholder="Enter patient full name"
+                  onChange={handleQueueNameChange}
+                  placeholder="Enter patient full name (Letters only)"
                   className="w-full bg-[#111e38] border border-[#20345b] focus:border-rose-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition"
                   required
                 />
+                {queueError && <p className="text-red-400 text-xs mt-1">{queueError}</p>}
               </div>
 
               <div>
@@ -911,6 +926,18 @@ export default function App() {
                   value={queuePhone} 
                   onChange={(e) => setQueuePhone(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))}
                   placeholder="10-digit mobile number"
+                  className="w-full bg-[#111e38] border border-[#20345b] focus:border-rose-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition"
+                  required
+                />
+              </div>
+
+              {/* Appointment Date Field */}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">{t.appointmentDateLabel}</label>
+                <input 
+                  type="date" 
+                  value={appointmentDate} 
+                  onChange={(e) => setAppointmentDate(e.target.value)}
                   className="w-full bg-[#111e38] border border-[#20345b] focus:border-rose-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition"
                   required
                 />
@@ -941,30 +968,52 @@ export default function App() {
             </form>
 
             {issuedToken && (
-              <div className="p-5 rounded-xl bg-[#11203d] border border-emerald-500/50 space-y-3 mt-6 animate-fade-in">
-                <div className="flex items-center justify-between border-b border-[#1f3661] pb-3">
-                  <span className="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
-                    <CheckCircle2 className="w-5 h-5" />
-                    {t.tokenSuccessTitle}
-                  </span>
-                  <span className="text-xs text-slate-400">{issuedToken.timestamp}</span>
+              <div className="space-y-4 pt-2">
+                {/* Token Summary Card */}
+                <div className="p-5 rounded-xl bg-[#11203d] border border-emerald-500/50 space-y-3 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-[#1f3661] pb-3">
+                    <span className="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
+                      <CheckCircle2 className="w-5 h-5" />
+                      {t.tokenSuccessTitle}
+                    </span>
+                    <span className="text-xs text-slate-400">{issuedToken.timestamp}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div className="bg-[#0b162b] p-3 rounded-xl border border-[#182848]">
+                      <div className="text-xs text-slate-400">{t.tokenNumber}</div>
+                      <div className="text-2xl font-extrabold text-white mt-1">{issuedToken.tokenNumber}</div>
+                    </div>
+                    <div className="bg-[#0b162b] p-3 rounded-xl border border-[#182848]">
+                      <div className="text-xs text-slate-400">{t.estWaitTime}</div>
+                      <div className="text-2xl font-extrabold text-sky-400 mt-1">{issuedToken.waitTime}</div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-slate-300 bg-[#0b162b] p-3 rounded-xl border border-[#182848] space-y-1">
+                    <div><strong>Patient:</strong> {issuedToken.patientName} ({issuedToken.phone})</div>
+                    <div><strong>Date:</strong> {issuedToken.appointmentDate}</div>
+                    <div><strong>{t.assignedDept}:</strong> {issuedToken.department} ({issuedToken.hospital})</div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-[#0b162b] p-3 rounded-xl border border-[#182848]">
-                    <div className="text-xs text-slate-400">{t.tokenNumber}</div>
-                    <div className="text-2xl font-extrabold text-white mt-1">{issuedToken.tokenNumber}</div>
+                {/* INTIMATION / SMS PREVIEW BOX */}
+                <div className="p-4 rounded-xl bg-[#081222] border border-sky-500/40 space-y-2 shadow-lg">
+                  <div className="flex items-center justify-between text-xs font-bold text-sky-400 border-b border-[#172748] pb-2">
+                    <span className="flex items-center gap-1.5">
+                      <MessageSquare className="w-4 h-4 text-sky-400" />
+                      {t.smsIntimationTitle}
+                    </span>
+                    <span className="text-[10px] bg-sky-950 px-2 py-0.5 rounded border border-sky-800 text-sky-300">
+                      Outbox Intimation
+                    </span>
                   </div>
-                  <div className="bg-[#0b162b] p-3 rounded-xl border border-[#182848]">
-                    <div className="text-xs text-slate-400">{t.estWaitTime}</div>
-                    <div className="text-2xl font-extrabold text-sky-400 mt-1">{issuedToken.waitTime}</div>
+                  <div className="font-mono text-xs text-slate-200 bg-[#050b16] p-3 rounded-lg border border-[#132240] leading-relaxed">
+                    "{issuedToken.smsBody}"
                   </div>
-                </div>
-
-                <div className="text-xs text-slate-300 bg-[#0b162b] p-3 rounded-xl border border-[#182848] space-y-1">
-                  <div><strong>Patient:</strong> {issuedToken.patientName} ({issuedToken.phone})</div>
-                  <div><strong>{t.assignedDept}:</strong> {issuedToken.department} (King George Hospital, Vizag)</div>
-                  <div className="text-emerald-400 font-medium pt-1">✓ {t.smsDispatched}</div>
+                  <div className="text-[11px] text-slate-400 italic text-right">
+                    Intimation box generated for mobile: +91 {issuedToken.phone || '98480XXXXX'}
+                  </div>
                 </div>
               </div>
             )}
@@ -1035,7 +1084,15 @@ export default function App() {
               <span className="text-xs text-slate-400">Next ring cascade in: {ringCountdown}s</span>
               <button 
                 type="button"
-                onClick={resolveCascade}
+                onClick={() => {
+                  setActiveIncidentData(prev => ({
+                    ...prev,
+                    currentRing: 3,
+                    status: 'RESOLVED',
+                    logs: ['[RESOLVED] Verification ACK received from donor. Courier locked.', ...prev.logs]
+                  }));
+                  triggerToast('Escalation resolved successfully!');
+                }}
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase shadow-lg transition cursor-pointer"
               >
                 {t.ackDonor}
