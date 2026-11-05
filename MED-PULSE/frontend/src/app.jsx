@@ -15,14 +15,98 @@ import {
   Clock,
   ShieldCheck,
   HeartPulse,
-  Send
+  Send,
+  Droplets,
+  Award
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api';
 
+// Translations dictionary
+const translations = {
+  EN: {
+    brandSubtitle: 'Predictive Emergency Blood Network',
+    outbreakTab: 'Outbreak Risk & Stock',
+    liveHubTab: 'Live Emergency Hub',
+    donorTab: 'Donor Portal & AI Parser',
+    aboutTab: 'About & Impact',
+    triggerEmergency: 'TRIGGER EMERGENCY DISPATCH',
+    dispatching: 'DISPATCHING...',
+    capacity: 'Capacity',
+    units: 'Units',
+    callsSent: 'Calls Sent',
+    confirmed: 'Confirmed',
+    avgEta: 'Avg ETA',
+    mins: 'mins',
+    standby: 'Standby',
+    preemptiveDispatch: 'Preemptive Dispatch',
+    activeClusters: 'Displaying 5 active hospital inventory clusters in Visakhapatnam',
+    liveSync: 'Live Sync Active',
+    activeCouriers: 'ACTIVE EMERGENCY COURIERS',
+    shortageAlerts: 'CRITICAL SHORTAGE ALERTS',
+    avgResponse: 'AVERAGE RESPONSE TIME',
+    liveFeedTitle: 'Live Dispatch Feed (Visakhapatnam Metropolitan Area)',
+    aiParserTitle: 'AI Blood Report Parser',
+    aiParserSubtitle: 'Upload donor CBC or blood test reports. Med Pulse AI extracts hemoglobin, platelet counts, and verifies eligibility.',
+    uploadPrompt: 'Click to Upload Donor CBC Report',
+    donorRegTitle: 'Instant Donor Registration',
+    donorRegSubtitle: 'Register as an emergency volunteer donor in Visakhapatnam.',
+    fullName: 'Full Name',
+    bloodGroup: 'Blood Group',
+    phone: 'Phone Number',
+    mandal: 'Vizag Mandal / Locality',
+    registerBtn: 'Register as Emergency Donor',
+    aboutTitle: 'About Med Pulse: Vizag Predictive Node',
+    aboutDesc: 'Med Pulse uses predictive telemetry and regional demand analytics to prevent critical blood stockouts across Visakhapatnam hospitals.',
+    livesSaved: 'Lives Impacted',
+    unitsManaged: 'Units Managed',
+    hospitalsConnected: 'Connected Hospitals'
+  },
+  TE: {
+    brandSubtitle: 'అత్యవసర రక్త నిల్వ ప్రిడిక్టివ్ నెట్‌వర్క్',
+    outbreakTab: 'వ్యాప్తి ప్రమాదం & స్టాక్',
+    liveHubTab: 'లైవ్ ఎమర్జెన్సీ హబ్',
+    donorTab: 'డోనర్ పోర్టల్ & AI పార్సర్',
+    aboutTab: 'నెట్‌వర్క్ వివరాలు & ప్రభావం',
+    triggerEmergency: 'అత్యవసర హెచ్చరిక పంపండి',
+    dispatching: 'పంపుతోంది...',
+    capacity: 'నిల్వ సామర్థ్యం',
+    units: 'యూనిట్లు',
+    callsSent: 'కాల్స్ వెళ్లాయి',
+    confirmed: 'ధృవీకరించబడ్డాయి',
+    avgEta: 'సగటు సమయం',
+    mins: 'నిమిషాలు',
+    standby: 'సిద్ధంగా ఉంది',
+    preemptiveDispatch: 'ముందస్తు డిస్పాచ్',
+    activeClusters: 'విశాఖపట్నం పరిధిలోని 5 ప్రధాన ఆసుపత్రుల రక్త నిల్వ వివరాలు',
+    liveSync: 'లైవ్ కనెక్ట్ అయింది',
+    activeCouriers: 'రవాణాలో ఉన్న అత్యవసర వాహనాలు',
+    shortageAlerts: 'తీవ్ర కొరత హెచ్చరికలు',
+    avgResponse: 'సగటు రెస్పాన్స్ సమయం',
+    liveFeedTitle: 'లైవ్ డిస్పాచ్ ఫీడ్ (విశాఖపట్నం మెట్రోపాలిటన్)',
+    aiParserTitle: 'AI రక్త పరీక్ష రిపోర్ట్ విశ్లేషణ',
+    aiParserSubtitle: 'రక్తదాత రిపోర్టును అప్‌లోడ్ చేసి హిమోగ్లోబిన్, ప్లేట్‌లెట్స్ అర్హతను సెకన్లలో తనిఖీ చేయండి.',
+    uploadPrompt: 'CBC రక్త పరీక్ష రిపోర్ట్ అప్‌లోడ్ చేయండి',
+    donorRegTitle: 'రక్తదాత నమోదు',
+    donorRegSubtitle: 'విశాఖపట్నం అత్యవసర రక్తదాతగా ఇప్పుడే నమోదు చేసుకోండి.',
+    fullName: 'పూర్తి పేరు',
+    bloodGroup: 'బ్లడ్ గ్రూప్',
+    phone: 'ఫోన్ నంబర్',
+    mandal: 'విశాఖపట్నం ప్రాంతం / మండలం',
+    registerBtn: 'రక్తదాతగా నమోదు చేయండి',
+    aboutTitle: 'మెడ్ పల్స్ వైజాగ్ నెట్‌వర్క్ గురించి',
+    aboutDesc: 'విశాఖపట్నం ఆసుపత్రులలో రక్తం మరియు ప్లేట్‌లెట్ల కొరత రాకుండా ముందస్తుగా హెచ్చరించి అందించే అత్యాధునిక నెట్‌వర్క్.',
+    livesSaved: 'కాపాడిన ప్రాణాలు',
+    unitsManaged: 'పంపిణీ చేసిన యూనిట్లు',
+    hospitalsConnected: 'అనుసంధాన ఆసుపత్రులు'
+  }
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('outbreak');
-  const [lang, setLang] = useState('EN'); // EN or TE
+  const [lang, setLang] = useState('EN'); // 'EN' or 'TE'
+  const t = translations[lang];
+
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
@@ -32,7 +116,11 @@ export default function App() {
   const [analyzingReport, setAnalyzingReport] = useState(false);
   const [parsedData, setParsedData] = useState(null);
 
-  // Fetch Hospitals from API (with fallback if backend isn't booted yet)
+  // Donor form state
+  const [donorName, setDonorName] = useState('');
+  const [donorPhone, setDonorPhone] = useState('');
+
+  // Fetch Hospitals from API or set fallback
   const fetchHospitals = async () => {
     try {
       const res = await fetch(`${API_BASE}/hospitals`);
@@ -41,7 +129,7 @@ export default function App() {
         setHospitals(data.data);
       }
     } catch {
-      // Fallback data matching the screenshot if backend is offline
+      // Offline fallback matching original prototype
       setHospitals([
         { id: 'node-care', name: 'Care Hospital Vizag', mandal: 'Maharani Peta Mandal, Vizag', isSample: true, requiredBlood: 'B+ Platelets', riskPercentage: 76, riskLevel: 'HIGH', capacityCurrent: 18, capacityTotal: 40, callsSent: 10, callsConfirmed: 8, avgEtaMins: 18 },
         { id: 'node-asram', name: 'ASRAM Blood Center', mandal: 'Gajuwaka Mandal, Vizag', isSample: true, requiredBlood: 'AB+ Platelets', riskPercentage: 31, riskLevel: 'LOW', capacityCurrent: 45, capacityTotal: 50, callsSent: 0, callsConfirmed: 0, avgEtaMins: null },
@@ -74,14 +162,14 @@ export default function App() {
         return;
       }
     } catch {
-      // Local state update fallback
+      // Local fallback
       setHospitals(prev => prev.map(h => h.id === id ? {
         ...h,
         callsSent: h.callsSent + 5,
         callsConfirmed: h.callsConfirmed + 3,
         avgEtaMins: h.avgEtaMins ? Math.max(12, h.avgEtaMins - 2) : 22
       } : h));
-      triggerToast(`Outreach initiated for ${name} (Offline mode)`);
+      triggerToast(`Outreach initiated for ${name}`);
     }
   };
 
@@ -91,7 +179,7 @@ export default function App() {
     try {
       await fetch(`${API_BASE}/emergency-dispatch`, { method: 'POST' });
     } catch {
-      // Ignore API err in offline mode
+      // Ignore API errors
     }
     setHospitals(prev => prev.map(h => (h.riskLevel === 'HIGH' || h.riskLevel === 'MED') ? {
       ...h,
@@ -99,10 +187,10 @@ export default function App() {
       callsConfirmed: h.callsConfirmed + 7
     } : h));
     setIsDispatchingAll(false);
-    triggerToast('🚨 EMERGENCY BROADCAST SENT TO ALL VIZAG NODES!');
+    triggerToast(lang === 'EN' ? '🚨 EMERGENCY BROADCAST SENT TO ALL VIZAG NODES!' : '🚨 అన్ని వైజాగ్ ఆసుపత్రులకు అత్యవసర హెచ్చరిక పంపబడింది!');
   };
 
-  // Simulate AI OCR Parser
+  // AI OCR parser simulation
   const runAiParser = () => {
     setAnalyzingReport(true);
     setParsedData(null);
@@ -113,11 +201,11 @@ export default function App() {
         bloodGroup: 'B+ Positive',
         hemoglobin: '14.8 g/dL (Normal)',
         platelets: '265,000 /µL (Optimal)',
-        hepatitis_hiv: 'Non-Reactive (Safe)',
+        serology: 'Non-Reactive (Safe for Donation)',
         status: 'ELIGIBLE FOR IMMEDIATE DISPATCH'
       });
-      triggerToast('AI Report Analysis Complete!');
-    }, 1800);
+      triggerToast(lang === 'EN' ? 'AI Report Analysis Complete!' : 'రిపోర్ట్ విశ్లేషణ పూర్తయింది!');
+    }, 1500);
   };
 
   return (
@@ -146,16 +234,15 @@ export default function App() {
                 VIZAG NODE
               </span>
             </div>
-            <p className="text-xs text-slate-400 tracking-normal font-medium">
-              {lang === 'EN' ? 'Predictive Emergency Blood Network' : 'అత్యవసర రక్త సరఫరా నెట్‌వర్క్'}
-            </p>
+            <p className="text-xs text-slate-400 tracking-normal font-medium">{t.brandSubtitle}</p>
           </div>
         </div>
 
         {/* Center Nav Tabs */}
         <div className="flex items-center gap-2">
-          {/* Tab 1 */}
+          {/* Outbreak Tab */}
           <button 
+            type="button"
             onClick={() => setActiveTab('outbreak')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs tracking-wider transition ${
               activeTab === 'outbreak' 
@@ -164,14 +251,12 @@ export default function App() {
             }`}
           >
             <Activity className="w-4 h-4" />
-            <div className="text-left">
-              <div>Outbreak</div>
-              <div className="text-[10px] opacity-80">Risk & Stock</div>
-            </div>
+            <span>{t.outbreakTab}</span>
           </button>
 
-          {/* Tab 2 */}
+          {/* Live Emergency Hub Tab */}
           <button 
+            type="button"
             onClick={() => setActiveTab('live-hub')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs tracking-wider transition ${
               activeTab === 'live-hub' 
@@ -180,14 +265,12 @@ export default function App() {
             }`}
           >
             <Radio className="w-4 h-4" />
-            <div className="text-left">
-              <div>Live</div>
-              <div className="text-[10px] opacity-80">Emergency Hub</div>
-            </div>
+            <span>{t.liveHubTab}</span>
           </button>
 
-          {/* Tab 3 */}
+          {/* Donor Portal Tab */}
           <button 
+            type="button"
             onClick={() => setActiveTab('donor')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs tracking-wider transition ${
               activeTab === 'donor' 
@@ -196,14 +279,12 @@ export default function App() {
             }`}
           >
             <UserCheck className="w-4 h-4" />
-            <div className="text-left">
-              <div>Donor Portal</div>
-              <div className="text-[10px] opacity-80">& AI Parser</div>
-            </div>
+            <span>{t.donorTab}</span>
           </button>
 
-          {/* Tab 4 */}
+          {/* About Tab */}
           <button 
+            type="button"
             onClick={() => setActiveTab('about')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs tracking-wider transition ${
               activeTab === 'about' 
@@ -212,52 +293,53 @@ export default function App() {
             }`}
           >
             <Info className="w-4 h-4" />
-            <div className="text-left">
-              <div>About</div>
-              <div className="text-[10px] opacity-80">& Impact</div>
-            </div>
+            <span>{t.aboutTab}</span>
           </button>
         </div>
 
         {/* Right Action / Language Controls */}
         <div className="flex items-center gap-3">
+          {/* Language Toggle Button */}
           <button 
-            onClick={() => setLang(l => l === 'EN' ? 'TE' : 'EN')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#111e38] border border-[#20345b] text-xs font-semibold text-slate-200 hover:bg-[#18294a] transition"
+            type="button"
+            onClick={() => setLang(prev => (prev === 'EN' ? 'TE' : 'EN'))}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#111e38] border border-[#20345b] text-xs font-semibold text-slate-200 hover:bg-[#18294a] transition cursor-pointer"
           >
             <Globe className="w-4 h-4 text-rose-400" />
             <span>{lang === 'EN' ? 'తెలుగు' : 'English'}</span>
           </button>
 
+          {/* Emergency Trigger */}
           <button 
+            type="button"
             onClick={handleTriggerEmergencyDispatch}
             disabled={isDispatchingAll}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d92d34] to-[#c11c22] hover:brightness-110 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-red-950/60 border border-red-400/30 transition disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d92d34] to-[#c11c22] hover:brightness-110 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-red-950/60 border border-red-400/30 transition disabled:opacity-50 cursor-pointer"
           >
             <PhoneCall className="w-4 h-4 fill-white" />
-            <span>{isDispatchingAll ? 'BROADCASTING...' : 'TRIGGER EMERGENCY DISPATCH'}</span>
+            <span>{isDispatchingAll ? t.dispatching : t.triggerEmergency}</span>
           </button>
         </div>
       </header>
 
       {/* DYNAMIC MAIN CONTENT SLIDES */}
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full transition-all">
+      <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
         
         {/* ========================================================
-            SLIDE 1: OUTBREAK RISK & STOCK (Original Image View)
+            SLIDE 1: OUTBREAK RISK & STOCK (Main Prototype View)
            ======================================================== */}
         {activeTab === 'outbreak' && (
-          <div className="space-y-3.5 animate-fadeIn">
+          <div className="space-y-3.5">
             <div className="flex justify-between items-center mb-1 text-xs text-slate-400">
-              <span>Displaying 5 active hospital inventory clusters in Visakhapatnam</span>
+              <span>{t.activeClusters}</span>
               <span className="flex items-center gap-1.5 text-emerald-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Live Sync Active
+                {t.liveSync}
               </span>
             </div>
 
             {loading ? (
-              <div className="py-24 text-center text-slate-400">Loading Node Telemetry...</div>
+              <div className="py-24 text-center text-slate-400">Loading Telemetry...</div>
             ) : (
               hospitals.map((node) => {
                 const capacityPct = Math.min(100, Math.round((node.capacityCurrent / node.capacityTotal) * 100));
@@ -308,9 +390,9 @@ export default function App() {
                     {/* Capacity Bar */}
                     <div className="w-48 shrink-0">
                       <div className="flex justify-between items-center text-xs mb-1.5 font-medium">
-                        <span className="text-slate-400 text-[11px]">Capacity</span>
+                        <span className="text-slate-400 text-[11px]">{t.capacity}</span>
                         <span className="text-slate-200 font-semibold text-[11px]">
-                          {node.capacityCurrent}/{node.capacityTotal} Units
+                          {node.capacityCurrent}/{node.capacityTotal} {t.units}
                         </span>
                       </div>
                       <div className="w-full bg-[#12203b] h-2 rounded-full overflow-hidden border border-[#1d3056]">
@@ -324,27 +406,28 @@ export default function App() {
                     {/* Telemetry / Calls */}
                     <div className="w-44 text-xs shrink-0 pl-4">
                       <div className="text-slate-300 font-medium">
-                        <span className="text-amber-400 font-bold">{node.callsSent}</span> Calls Sent{' '}
+                        <span className="text-amber-400 font-bold">{node.callsSent}</span> {t.callsSent}{' '}
                         <span className="text-slate-400 font-bold">→</span>{' '}
-                        <span className="text-emerald-400 font-bold">{node.callsConfirmed}</span> Confirmed
+                        <span className="text-emerald-400 font-bold">{node.callsConfirmed}</span> {t.confirmed}
                       </div>
                       {node.avgEtaMins ? (
                         <div className="text-sky-400 font-medium text-[11px] mt-0.5">
-                          Avg ETA: {node.avgEtaMins} mins
+                          {t.avgEta}: {node.avgEtaMins} {t.mins}
                         </div>
                       ) : (
-                        <div className="text-slate-500 text-[11px] mt-0.5">Standby</div>
+                        <div className="text-slate-500 text-[11px] mt-0.5">{t.standby}</div>
                       )}
                     </div>
 
                     {/* Dispatch Button */}
                     <div className="shrink-0">
                       <button
+                        type="button"
                         onClick={() => handlePreemptiveDispatch(node.id, node.name)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#d92d34] hover:bg-[#b91c22] active:scale-95 text-white font-semibold text-xs tracking-tight shadow-md shadow-red-950/40 border border-red-400/20 transition"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#d92d34] hover:bg-[#b91c22] active:scale-95 text-white font-semibold text-xs tracking-tight shadow-md shadow-red-950/40 border border-red-400/20 transition cursor-pointer"
                       >
                         <PhoneCall className="w-3.5 h-3.5 fill-white" />
-                        <span>Preemptive Dispatch</span>
+                        <span>{t.preemptiveDispatch}</span>
                       </button>
                     </div>
                   </div>
@@ -358,21 +441,21 @@ export default function App() {
             SLIDE 2: LIVE EMERGENCY HUB
            ======================================================== */}
         {activeTab === 'live-hub' && (
-          <div className="space-y-6 animate-fadeIn">
-            {/* Header Metrics */}
+          <div className="space-y-6">
+            {/* Top Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-5">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span>ACTIVE EMERGENCY COURIERS</span>
+                  <span>{t.activeCouriers}</span>
                   <Navigation className="w-4 h-4 text-emerald-400" />
                 </div>
-                <div className="text-3xl font-extrabold text-white">7 Units</div>
-                <div className="text-xs text-emerald-400 mt-1">● 4 Bike Couriers | 3 Ambulances</div>
+                <div className="text-3xl font-extrabold text-white">7 {t.units}</div>
+                <div className="text-xs text-emerald-400 mt-1">● 4 Rapid Bikes | 3 Transit Vans</div>
               </div>
 
               <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-5">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span>CRITICAL SHORTAGE ALERTS</span>
+                  <span>{t.shortageAlerts}</span>
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
                 </div>
                 <div className="text-3xl font-extrabold text-amber-400">2 Hospitals</div>
@@ -381,22 +464,22 @@ export default function App() {
 
               <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-5">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span>AVERAGE RESPONSE TIME</span>
+                  <span>{t.avgResponse}</span>
                   <Clock className="w-4 h-4 text-sky-400" />
                 </div>
-                <div className="text-3xl font-extrabold text-sky-400">16.4 Mins</div>
+                <div className="text-3xl font-extrabold text-sky-400">16.4 {t.mins}</div>
                 <div className="text-xs text-emerald-400 mt-1">↓ 32% faster than city average</div>
               </div>
             </div>
 
-            {/* Live Incidents Stream */}
+            {/* Live Incidents */}
             <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-6">
               <div className="flex items-center justify-between border-b border-[#162747] pb-4 mb-4">
                 <h3 className="font-bold text-white text-base flex items-center gap-2">
                   <Radio className="w-4 h-4 text-red-500 animate-pulse" />
-                  Live Dispatch Feed (Visakhapatnam Metropolitan Area)
+                  {t.liveFeedTitle}
                 </h3>
-                <span className="text-xs text-slate-400">Auto-refreshing every 5 seconds</span>
+                <span className="text-xs text-slate-400">Real-time GPS telemetry</span>
               </div>
 
               <div className="space-y-3">
@@ -404,11 +487,11 @@ export default function App() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded bg-red-950 border border-red-700 text-red-400 font-bold text-xs">CRITICAL SOS</span>
-                      <span className="font-bold text-white text-sm">King George Hospital (KGH)</span>
+                      <span className="font-bold text-white text-sm">King George Hospital (KGH Vizag)</span>
                       <span className="text-xs text-slate-400">• 4 mins ago</span>
                     </div>
                     <div className="text-xs text-slate-300 mt-1">
-                      Urgent Request: 3 Units O-Negative PRBC requested for trauma unit. Green Corridor cleared on Jagadamba Junction.
+                      Urgent Request: 3 Units O-Negative PRBC requested for trauma OT. Green corridor active via Jagadamba.
                     </div>
                   </div>
                   <div className="text-right">
@@ -426,7 +509,7 @@ export default function App() {
                       <span className="text-xs text-slate-400">• 12 mins ago</span>
                     </div>
                     <div className="text-xs text-slate-300 mt-1">
-                      Preemptive Stock replenishment: 4 units Single Donor Platelets (SDP) in transit from Vizag Red Cross Node.
+                      Stock replenishment: 4 units Single Donor Platelets (SDP) in transit from Vizag Red Cross Central.
                     </div>
                   </div>
                   <div className="text-right">
@@ -444,16 +527,14 @@ export default function App() {
             SLIDE 3: DONOR PORTAL & AI PARSER
            ======================================================== */}
         {activeTab === 'donor' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* AI Medical Report Parser Card */}
             <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-6">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-5 h-5 text-red-500" />
-                <h3 className="font-bold text-white text-lg">AI Blood Report Parser</h3>
+                <h3 className="font-bold text-white text-lg">{t.aiParserTitle}</h3>
               </div>
-              <p className="text-xs text-slate-400 mb-6">
-                Upload donor CBC or blood test reports. Med Pulse AI extracts hemoglobin, platelet counts, and verifies donor eligibility in seconds.
-              </p>
+              <p className="text-xs text-slate-400 mb-6">{t.aiParserSubtitle}</p>
 
               {/* Upload Dropzone */}
               <div 
@@ -462,14 +543,14 @@ export default function App() {
               >
                 <UploadCloud className="w-10 h-10 text-slate-400 group-hover:text-red-400 mx-auto mb-3 transition" />
                 <div className="font-semibold text-sm text-slate-200">
-                  {analyzingReport ? 'Analyzing report with MedPulse AI...' : 'Click to Upload Donor CBC Report'}
+                  {analyzingReport ? (lang === 'EN' ? 'Analyzing with Med Pulse AI...' : 'AI విశ్లేషిస్తోంది...') : t.uploadPrompt}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">PDF, JPG, or PNG (Max 10MB)</div>
+                <div className="text-xs text-slate-500 mt-1">Click to simulate OCR scan (PDF/PNG)</div>
               </div>
 
               {/* Parsed Result Display */}
               {parsedData && (
-                <div className="mt-5 p-4 rounded-xl bg-[#08221c] border border-[#14532d] animate-fadeIn">
+                <div className="mt-5 p-4 rounded-xl bg-[#08221c] border border-[#14532d]">
                   <div className="flex items-center justify-between mb-3 border-b border-emerald-800/40 pb-2">
                     <span className="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4" /> AI OCR VERIFICATION PASS
@@ -477,36 +558,49 @@ export default function App() {
                     <span className="text-[11px] text-slate-300 font-semibold">{parsedData.patient}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><span className="text-slate-400">Blood Group:</span> <strong className="text-white">{parsedData.bloodGroup}</strong></div>
-                    <div><span className="text-slate-400">Hemoglobin:</span> <strong className="text-emerald-300">{parsedData.hemoglobin}</strong></div>
-                    <div><span className="text-slate-400">Platelets:</span> <strong className="text-emerald-300">{parsedData.platelets}</strong></div>
-                    <div><span className="text-slate-400">Serology:</span> <strong className="text-emerald-300">{parsedData.hepatitis_hiv}</strong></div>
+                    <div><span className="text-slate-400">Blood Group:</span> <strong className="text-white ml-1">{parsedData.bloodGroup}</strong></div>
+                    <div><span className="text-slate-400">Hemoglobin:</span> <strong className="text-emerald-300 ml-1">{parsedData.hemoglobin}</strong></div>
+                    <div><span className="text-slate-400">Platelets:</span> <strong className="text-emerald-300 ml-1">{parsedData.platelets}</strong></div>
+                    <div><span className="text-slate-400">Serology:</span> <strong className="text-emerald-300 ml-1">{parsedData.serology}</strong></div>
                   </div>
-                  <div className="mt-3 text-center py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase tracking-wider">
+                  <div className="mt-3 text-center py-2 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase tracking-wider">
                     {parsedData.status}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Quick Donor Registration */}
+            {/* Instant Donor Registration */}
             <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-6">
               <div className="flex items-center gap-2 mb-2">
                 <HeartPulse className="w-5 h-5 text-red-500" />
-                <h3 className="font-bold text-white text-lg">Instant Donor Registration</h3>
+                <h3 className="font-bold text-white text-lg">{t.donorRegTitle}</h3>
               </div>
-              <p className="text-xs text-slate-400 mb-6">
-                Register as an emergency volunteer donor in the Visakhapatnam region.
-              </p>
+              <p className="text-xs text-slate-400 mb-6">{t.donorRegSubtitle}</p>
 
-              <form onSubmit={(e) => { e.preventDefault(); triggerToast('Donor registered into Vizag Node roster!'); }} className="space-y-4 text-xs">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  triggerToast(lang === 'EN' ? `Donor ${donorName || 'Volunteer'} enrolled successfully!` : 'రక్తదాత విజయవంతంగా నమోదయ్యారు!');
+                  setDonorName('');
+                  setDonorPhone('');
+                }} 
+                className="space-y-4 text-xs"
+              >
                 <div>
-                  <label className="block text-slate-300 mb-1 font-semibold">Full Name</label>
-                  <input type="text" required placeholder="e.g. Harini Prasanna" className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500" />
+                  <label className="block text-slate-300 mb-1 font-semibold">{t.fullName}</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={donorName}
+                    onChange={(e) => setDonorName(e.target.value)}
+                    placeholder="e.g. Harini Prasanna" 
+                    className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500" 
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Blood Group</label>
+                    <label className="block text-slate-300 mb-1 font-semibold">{t.bloodGroup}</label>
                     <select className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500">
                       <option>O +ve</option>
                       <option>O -ve</option>
@@ -519,19 +613,91 @@ export default function App() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Phone Number</label>
-                    <input type="tel" required placeholder="+91 98765 43210" className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500" />
+                    <label className="block text-slate-300 mb-1 font-semibold">{t.phone}</label>
+                    <input 
+                      type="tel" 
+                      required 
+                      value={donorPhone}
+                      onChange={(e) => setDonorPhone(e.target.value)}
+                      placeholder="+91 98765 43210" 
+                      className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500" 
+                    />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-slate-300 mb-1 font-semibold">Vizag Mandal / Locality</label>
+                  <label className="block text-slate-300 mb-1 font-semibold">{t.mandal}</label>
                   <select className="w-full px-3 py-2.5 rounded-lg bg-[#0e1b34] border border-[#1f3258] text-white focus:outline-none focus:border-red-500">
-                    <option>Maharani Peta Mandal</option>
-                    <option>Gajuwaka Mandal</option>
-                    <option>Rushikonda Mandal</option>
-                    <option>Arilova Mandal</option>
-                    <option>Ram Nagar Mandal</option>
-                    <option>Madhurawada</option>
+                    <option>Maharani Peta Mandal, Vizag</option>
+                    <option>Gajuwaka Mandal, Vizag</option>
+                    <option>Rushikonda Mandal, Vizag</option>
+                    <option>Arilova Mandal, Vizag</option>
+                    <option>Ram Nagar Mandal, Vizag</option>
+                    <option>Madhurawada, Vizag</option>
                   </select>
                 </div>
-                <button type="submit" className="w-full py-3 rounded-lg bg-[#d92d34] hover:bg-[#b91c22] text-white font-bold tracking-wide transition flex items-center justify-center gap
+                <button 
+                  type="submit" 
+                  className="w-full py-3 rounded-lg bg-[#d92d34] hover:bg-[#b91c22] text-white font-bold tracking-wide transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-950/40"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{t.registerBtn}</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            SLIDE 4: ABOUT & IMPACT
+           ======================================================== */}
+        {activeTab === 'about' && (
+          <div className="space-y-6">
+            <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-7">
+              <h2 className="text-xl font-extrabold text-white mb-2 flex items-center gap-2">
+                <Award className="w-6 h-6 text-red-500" />
+                {t.aboutTitle}
+              </h2>
+              <p className="text-slate-300 text-sm leading-relaxed max-w-4xl">
+                {t.aboutDesc}
+              </p>
+
+              {/* Stats Highlights */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                <div className="p-5 rounded-xl bg-[#0f1f3d] border border-[#1d335c]">
+                  <div className="flex items-center gap-3">
+                    <HeartPulse className="w-8 h-8 text-red-500" />
+                    <div>
+                      <div className="text-2xl font-extrabold text-white">1,420+</div>
+                      <div className="text-xs text-slate-400">{t.livesSaved}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-xl bg-[#0f1f3d] border border-[#1d335c]">
+                  <div className="flex items-center gap-3">
+                    <Droplets className="w-8 h-8 text-sky-400" />
+                    <div>
+                      <div className="text-2xl font-extrabold text-white">8,950</div>
+                      <div className="text-xs text-slate-400">{t.unitsManaged}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-xl bg-[#0f1f3d] border border-[#1d335c]">
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-8 h-8 text-emerald-400" />
+                    <div>
+                      <div className="text-2xl font-extrabold text-white">18</div>
+                      <div className="text-xs text-slate-400">{t.hospitalsConnected}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}
