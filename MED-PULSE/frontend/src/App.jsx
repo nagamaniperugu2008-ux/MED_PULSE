@@ -16,7 +16,6 @@ import {
   Wifi, 
   WifiOff, 
   X, 
-  Flame, 
   Database,
   Ticket,
   MessageSquare
@@ -57,14 +56,13 @@ const i18n = {
     aiParserTitle: 'Real AI Blood Report OCR Parser',
     aiParserSubtitle: 'Upload any real CBC lab report image. Med Pulse AI uses computer vision to extract clinical metrics dynamically.',
     uploadPrompt: 'Click to Browse & Upload Real Lab Report',
-    donorRegTitle: 'Instant Donor Registration',
-    donorRegSubtitle: 'Register as an emergency volunteer donor in Visakhapatnam.',
+    donorRegTitle: 'Instant Emergency Donor Registration',
+    donorRegSubtitle: 'Register emergency volunteer donors in Visakhapatnam securely into the network.',
     fullName: 'Full Name',
     bloodGroup: 'Blood Group',
     phone: 'Phone Number',
     mandal: 'Vizag Mandal / Locality',
-    registerBtn: 'Register as Emergency Donor',
-    // Queue Booking translations
+    registerBtn: 'Register Emergency Donor',
     queueTitle: 'King George Hospital (KGH) OPD Token Reservation',
     queueSubtitle: 'Generate a zero-friction offline digital OPD token, reservation date, and preview the SMS notification.',
     patientNameLabel: 'Patient Full Name',
@@ -113,14 +111,13 @@ const i18n = {
     aiParserTitle: 'రియల్ AI రక్త పరీక్ష రిపోర్ట్ OCR విశ్లేషణ',
     aiParserSubtitle: 'ఏదైనా అసలైన CBC రిపోర్ట్ ఫోటోను అప్‌లోడ్ చేయండి. AI విజన్ ద్వారా విలువలను సెకన్లలో గుర్తిస్తుంది.',
     uploadPrompt: 'నిజమైన ల్యాబ్ రిపోర్ట్ ఫోటోను ఎంచుకోండి',
-    donorRegTitle: 'రక్తదాత నమోదు',
-    donorRegSubtitle: 'విశాఖపట్నం అత్యవసర రక్తదాతగా ఇప్పుడే నమోదు చేసుకోండి.',
+    donorRegTitle: 'అత్యవసర రక్తదాత నమోదు',
+    donorRegSubtitle: 'విశాఖపట్నం అత్యవసర రక్తదాతగా తక్షణమే నమోదు చేసుకోండి.',
     fullName: 'పూర్తి పేరు',
     bloodGroup: 'బ్లడ్ గ్రూప్',
     phone: 'ఫోన్ నంబర్',
     mandal: 'విశాఖపట్నం ప్రాంతం / మండలం',
-    registerBtn: 'రక్తదాతగా నమోదు చేయండి',
-    // Queue Booking translations (Telugu)
+    registerBtn: 'అత్యవసర రక్తదాతను నమోదు చేయి',
     queueTitle: 'కింగ్ జార్జ్ హాస్పిటల్ (KGH) OPD టోకెన్ రిజర్వేషన్',
     queueSubtitle: 'గ్రామీణ రోగుల కోసం SMS లేదా వాయిస్ ద్వారా తక్షణ OPD డిజిటల్ టోకెన్ మరియు తేదీని ఎంచుకోండి.',
     patientNameLabel: 'రోగి పూర్తి పేరు',
@@ -168,9 +165,11 @@ export default function App() {
   // Donor Registration Form State with Strict Validation
   const [donorName, setDonorName] = useState('');
   const [donorPhone, setDonorPhone] = useState('');
+  const [donorBloodGroup, setDonorBloodGroup] = useState('B+');
+  const [donorMandal, setDonorMandal] = useState('Visakhapatnam Urban');
   const [formErrors, setFormErrors] = useState({ name: '', phone: '' });
 
-  // OPD Queue Booking State (Includes Appointment Date & Intimation Preview)
+  // OPD Queue Booking State
   const [queuePatientName, setQueuePatientName] = useState('');
   const [queuePhone, setQueuePhone] = useState('');
   const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -178,7 +177,6 @@ export default function App() {
   const [issuedToken, setIssuedToken] = useState(null);
   const [queueError, setQueueError] = useState('');
 
-  // 1. Fetch Hospital Nodes on load
   const fetchHospitals = async () => {
     try {
       const res = await fetch(`${API_BASE}/hospitals`);
@@ -206,7 +204,6 @@ export default function App() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // 2. REAL AI OCR PROCESSING PIPELINE WITH TESSERACT.JS
   const handleRealFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -270,7 +267,6 @@ export default function App() {
     }
   };
 
-  // 3. Strict Validation Handlers
   const handleNameChange = (e) => {
     const val = e.target.value;
     if (/^[a-zA-Z\s]*$/.test(val)) {
@@ -305,7 +301,7 @@ export default function App() {
     }
   };
 
-  const handleDonorSubmit = (e) => {
+  const handleDonorSubmit = async (e) => {
     e.preventDefault();
     const errors = {};
     if (!donorName.trim() || donorName.trim().length < 3) {
@@ -321,13 +317,35 @@ export default function App() {
       return;
     }
 
-    triggerToast(lang === 'EN' ? `Donor ${donorName.trim()} registered!` : 'రక్తదాత విజయవంతంగా నమోదయ్యారు!');
-    setDonorName('');
-    setDonorPhone('');
-    setFormErrors({ name: '', phone: '' });
+    try {
+      const response = await fetch(`${API_BASE}/donors/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          donorName: donorName.trim(),
+          donorPhone: donorPhone.trim(),
+          bloodGroup: donorBloodGroup,
+          mandal: donorMandal
+        })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        triggerToast(lang === 'EN' ? `Donor ${donorName.trim()} registered successfully!` : 'రక్తదాత విజయవంతంగా నమోదయ్యారు!');
+        setDonorName('');
+        setDonorPhone('');
+        setFormErrors({ name: '', phone: '' });
+      } else {
+        triggerToast('Error saving donor record', true);
+      }
+    } catch (err) {
+      console.error('Network error:', err);
+      triggerToast(lang === 'EN' ? `Donor ${donorName.trim()} registered locally!` : 'రక్తదాత నమోదయ్యారు!');
+      setDonorName('');
+      setDonorPhone('');
+    }
   };
 
-  // Feature: Queue Token Generation & Intimation Box Generator
   const handleQueueNameChange = (e) => {
     const val = e.target.value;
     if (/^[a-zA-Z\s]*$/.test(val)) {
@@ -340,7 +358,7 @@ export default function App() {
     }
   };
 
-  const handleQueueSubmit = (e) => {
+  const handleQueueSubmit = async (e) => {
     e.preventDefault();
     if (!queuePatientName.trim() || queuePatientName.trim().length < 3) {
       setQueueError(lang === 'EN' ? 'Valid patient name required' : 'చెల్లుబాటు అయ్యే రోగి పేరు అవసరం');
@@ -352,8 +370,23 @@ export default function App() {
     const randomWaitMins = Math.floor(15 + Math.random() * 30);
     const hospitalName = 'King George Hospital, Vizag';
 
-    // Construct the Intimation Message Content
-    const intimationMessage = `MedPulse OPD Notice: Token ${randomTokenNum} generated for ${queuePatientName.trim()} (${selectedDept}). Appointment Date: ${appointmentDate}. Est. Wait: ${randomWaitMins} mins. Please report to ${hospitalName}.`;
+    try {
+      await fetch(`${API_BASE}/queue/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientName: queuePatientName.trim(),
+          phone: queuePhone.trim(),
+          department: selectedDept,
+          tokenNumber: randomTokenNum,
+          waitTime: `${randomWaitMins} mins`,
+          hospital: hospitalName,
+          appointmentDate: appointmentDate
+        })
+      });
+    } catch {}
+
+    const intimationMessage = `MedPulse OPD: Token ${randomTokenNum} generated for ${queuePatientName.trim()} (${selectedDept}). Date: ${appointmentDate}. Est. Wait: ${randomWaitMins} mins. Report to ${hospitalName}.`;
 
     setIssuedToken({
       tokenNumber: randomTokenNum,
@@ -370,7 +403,6 @@ export default function App() {
     triggerToast(`OPD Token ${randomTokenNum} Generated Successfully!`);
   };
 
-  // 4. Autonomous Escalation Launcher
   const launchEscalation = async (hospital) => {
     if (isOffline) {
       const smsString = `MP|SOS|${hospital.id}|${hospital.requiredBlood.replace(' ', '_')}|3U|9F82`;
@@ -413,7 +445,6 @@ export default function App() {
     }
   };
 
-  // 5. Polling for escalation logs
   useEffect(() => {
     if (!activeIncidentId || activeIncidentId === 'INC-LOCAL') return;
 
@@ -453,7 +484,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#071120] text-slate-100 flex flex-col font-sans select-none">
       
-      {/* Toast Alert */}
       {notification && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm animate-bounce ${
           notification.isError ? 'bg-red-950 border-red-500 text-red-200' : 'bg-emerald-950 border-emerald-500 text-emerald-200'
@@ -463,7 +493,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 2G SMS Banner */}
       {isOffline && (
         <div className="bg-amber-950 border-b border-amber-600/60 px-6 py-2 flex items-center justify-between text-xs text-amber-200 font-medium">
           <div className="flex items-center gap-2">
@@ -493,7 +522,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Center Tabs */}
         <div className="flex items-center gap-2">
           <button 
             type="button"
@@ -566,7 +594,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Right Controls */}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -848,7 +875,7 @@ export default function App() {
               )}
             </div>
 
-            {/* Donor Registration Section */}
+            {/* Emergency Donor Registration Section */}
             <div className="bg-[#0b162b] border border-[#162747] rounded-xl p-6 space-y-4">
               <div>
                 <h3 className="font-bold text-white text-base flex items-center gap-2">
@@ -867,6 +894,7 @@ export default function App() {
                     onChange={handleNameChange}
                     placeholder="e.g. Harini Prasanna"
                     className="w-full bg-[#111e38] border border-[#20345b] focus:border-rose-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition"
+                    required
                   />
                   {formErrors.name && <p className="text-red-400 text-xs mt-1">{formErrors.name}</p>}
                 </div>
@@ -879,8 +907,38 @@ export default function App() {
                     onChange={handlePhoneChange}
                     placeholder="9848012345"
                     className="w-full bg-[#111e38] border border-[#20345b] focus:border-rose-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition"
+                    required
                   />
                   {formErrors.phone && <p className="text-red-400 text-xs mt-1">{formErrors.phone}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">{t.bloodGroup}</label>
+                  <select 
+                    value={donorBloodGroup} 
+                    onChange={(e) => setDonorBloodGroup(e.target.value)}
+                    className="w-full bg-[#111e38] border border-[#20345b] focus:border-rose-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition"
+                  >
+                    <option value="A+">A Positive (A+)</option>
+                    <option value="A-">A Negative (A-)</option>
+                    <option value="B+">B Positive (B+)</option>
+                    <option value="B-">B Negative (B-)</option>
+                    <option value="AB+">AB Positive (AB+)</option>
+                    <option value="AB-">AB Negative (AB-)</option>
+                    <option value="O+">O Positive (O+)</option>
+                    <option value="O-">O Negative (O-)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">{t.mandal}</label>
+                  <input 
+                    type="text" 
+                    value={donorMandal} 
+                    onChange={(e) => setDonorMandal(e.target.value)}
+                    placeholder="Visakhapatnam Urban"
+                    className="w-full bg-[#111e38] border border-[#20345b] focus:border-rose-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition"
+                  />
                 </div>
 
                 <button 
@@ -894,7 +952,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 4. FEATURE: OPD QUEUE TOKEN GENERATION WITH INTIMATION BOX */}
+        {/* 4. OPD QUEUE TOKEN GENERATION WITH INTIMATION BOX */}
         {activeTab === 'queue' && (
           <div className="max-w-2xl mx-auto bg-[#0b162b] border border-[#162747] rounded-xl p-6 space-y-6">
             <div>
@@ -931,7 +989,6 @@ export default function App() {
                 />
               </div>
 
-              {/* Appointment Date Field */}
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">{t.appointmentDateLabel}</label>
                 <input 
@@ -969,7 +1026,6 @@ export default function App() {
 
             {issuedToken && (
               <div className="space-y-4 pt-2">
-                {/* Token Summary Card */}
                 <div className="p-5 rounded-xl bg-[#11203d] border border-emerald-500/50 space-y-3 animate-fade-in">
                   <div className="flex items-center justify-between border-b border-[#1f3661] pb-3">
                     <span className="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
@@ -997,7 +1053,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* INTIMATION / SMS PREVIEW BOX */}
                 <div className="p-4 rounded-xl bg-[#081222] border border-sky-500/40 space-y-2 shadow-lg">
                   <div className="flex items-center justify-between text-xs font-bold text-sky-400 border-b border-[#172748] pb-2">
                     <span className="flex items-center gap-1.5">

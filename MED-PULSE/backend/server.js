@@ -13,6 +13,12 @@ let hospitals = [
 ];
 
 let activeIncidents = {};
+let registeredDonors = []; // In-memory donor storage
+
+// Root Status Endpoint
+app.get('/', (req, res) => {
+  res.send('Med Pulse Backend Gateway is running live and operational!');
+});
 
 // 1. Get Hospitals Endpoint
 app.get('/api/hospitals', (req, res) => {
@@ -77,11 +83,34 @@ app.post('/api/gateway/sms', (req, res) => {
   });
 });
 
-// =========================================================================
-// 6. NEW FEATURE: OPD Queue Token & SMS Dispatch Gateway Endpoint
-// =========================================================================
+// 6. Donor Registration Endpoint (In-Memory)
+app.post('/api/donors/register', (req, res) => {
+  const { donorName, donorPhone, bloodGroup, mandal } = req.body;
+
+  if (!donorName || !donorPhone) {
+    return res.status(400).json({ success: false, message: 'Missing required donor fields.' });
+  }
+
+  const newDonor = {
+    timestamp: new Date().toISOString(),
+    donorName,
+    donorPhone,
+    bloodGroup: bloodGroup || 'N/A',
+    mandal: mandal || 'Vizag'
+  };
+
+  registeredDonors.push(newDonor);
+  console.log(`[DONOR REGISTERED IN-MEMORY] -> Name: ${donorName} (+91 ${donorPhone}), Blood: ${newDonor.bloodGroup}`);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Donor successfully registered!'
+  });
+});
+
+// 7. OPD Queue Token & SMS Dispatch Gateway Endpoint
 app.post('/api/queue/token', (req, res) => {
-  const { patientName, phone, department, tokenNumber, waitTime, hospital } = req.body;
+  const { patientName, phone, department, tokenNumber, waitTime, hospital, appointmentDate } = req.body;
 
   if (!patientName || !phone || !tokenNumber || !department) {
     return res.status(400).json({ 
@@ -90,23 +119,17 @@ app.post('/api/queue/token', (req, res) => {
     });
   }
 
-  // Construct standard SMS packet message body
-  const smsBody = `MedPulse OPD: Token ${tokenNumber} issued for ${patientName} (${department}). Est wait: ${waitTime}. Report to ${hospital || 'King George Hospital, Vizag'}.`;
+  const smsBody = `MedPulse OPD: Token ${tokenNumber} issued for ${patientName} (${department}). Date: ${appointmentDate || 'Today'}. Est wait: ${waitTime}. Report to ${hospital || 'King George Hospital, Vizag'}.`;
 
-  // Telemetry Console Trace Log (Visible in your backend terminal output)
   console.log(`\n========================================`);
   console.log(`[SMS GATEWAY DISPATCH SUCCESS]`);
-  console.log(`Target Phone : +91 ${phone}`);
-  console.log(`Patient Name : ${patientName}`);
-  console.log(`Department   : ${department}`);
-  console.log(`Token Code   : ${tokenNumber}`);
-  console.log(`Payload Text : "${smsBody}"`);
+  console.log(`Target Phone   : +91 ${phone}`);
+  console.log(`Patient Name   : ${patientName}`);
+  console.log(`Department     : ${department}`);
+  console.log(`Token Code     : ${tokenNumber}`);
+  console.log(`Appointment Dt : ${appointmentDate || 'N/A'}`);
+  console.log(`Payload Text   : "${smsBody}"`);
   console.log(`========================================\n`);
-
-  /* 
-    Optional: Integrate your third-party SMS provider API here (e.g., Twilio or Fast2SMS)
-    await axios.post('https://api.fast2sms.com/dev/bulkV2', { ... });
-  */
 
   return res.status(200).json({
     success: true,
